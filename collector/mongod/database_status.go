@@ -40,6 +40,18 @@ var (
 		Name:      "objects_total",
 		Help:      "Contains a count of the number of objects (i.e. documents) in the database across all collections",
 	}, []string{"db"})
+	fsUsedSize = prometheus.NewGaugeVec(prometheus.GaugeOpts{
+		Namespace: Namespace,
+		Subsystem: "db",
+		Name:      "fs_used_size_bytes",
+		Help:      "Total size of all disk space in use on the filesystem where MongoDB stores data",
+	}, []string{"db"})
+	fsTotalSize = prometheus.NewGaugeVec(prometheus.GaugeOpts{
+		Namespace: Namespace,
+		Subsystem: "db",
+		Name:      "fs_total_size_bytes",
+		Help:      "Total size of all disk capacity on the filesystem where MongoDB stores data",
+	}, []string{"db"})
 )
 
 // DatabaseStatList contains stats from all databases
@@ -55,6 +67,8 @@ type DatabaseStatus struct {
 	Collections int    `bson:"collections,omitempty"`
 	Objects     int    `bson:"objects,omitempty"`
 	Indexes     int    `bson:"indexes,omitempty"`
+	FSUsedSize	int	   `bson:"fsUsedSize,omitempty"`
+	FSTotalSize	int	   `bson:"fsTotalSize,omitempty"`
 }
 
 // Export exports database stats to prometheus
@@ -66,13 +80,17 @@ func (dbStatList *DatabaseStatList) Export(ch chan<- prometheus.Metric) {
 		collectionsTotal.With(ls).Set(float64(member.Collections))
 		indexesTotal.With(ls).Set(float64(member.Indexes))
 		objectsTotal.With(ls).Set(float64(member.Objects))
+		fsUsedSize.With(ls).Set(float64(member.FSUsedSize))
+		fsTotalSize.With(ls).Set(float64(member.FSTotalSize))
+
 	}
 	indexSize.Collect(ch)
 	dataSize.Collect(ch)
 	collectionsTotal.Collect(ch)
 	indexesTotal.Collect(ch)
 	objectsTotal.Collect(ch)
-
+	fsUsedSize.Collect(ch)
+	fsTotalSize.Collect(ch)
 }
 
 // Describe describes database stats for prometheus
@@ -82,6 +100,8 @@ func (dbStatList *DatabaseStatList) Describe(ch chan<- *prometheus.Desc) {
 	collectionsTotal.Describe(ch)
 	indexesTotal.Describe(ch)
 	objectsTotal.Describe(ch)
+	fsUsedSize.Describe(ch)
+	fsTotalSize.Describe(ch)
 }
 
 // GetDatabaseStatList returns stats for all databases
